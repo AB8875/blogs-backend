@@ -15,6 +15,19 @@ type User = {
 export class UsersService {
   private users = new Map<string, User>();
 
+  constructor() {
+    // Seed demo admin user
+    const adminId = uuid();
+    this.users.set(adminId, {
+      _id: adminId,
+      full_name: 'Admin User',
+      email: 'admin@gmail.com',
+      password: 'admin123', // plaintext for demo
+      role: 'admin',
+      createdAt: new Date().toISOString(),
+    });
+  }
+
   findAll(): User[] {
     return Array.from(this.users.values());
   }
@@ -61,7 +74,6 @@ export class UsersService {
     return { deleted: true };
   }
 
-  // Used by seeder
   seed(users: User[]) {
     users.forEach((u) => this.users.set(u._id, u));
   }
