@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { PostsService } from '../posts/posts.service';
-import { CategoriesService } from '../categories/categories.service';
+import { MenuService } from '../menu/menu.service';
 import { SettingsService } from '../settings/settings.service';
 import { v4 as uuid } from 'uuid';
 
@@ -14,11 +14,11 @@ export class SeedService {
   constructor(
     private readonly users: UsersService,
     private readonly posts: PostsService,
-    private readonly categories: CategoriesService,
+    private readonly menuService: MenuService,
     private readonly settings: SettingsService,
   ) {}
 
-  run() {
+  async run() {
     // Users (demo)
     const demoAdminId = uuid();
     const demoUser = {
@@ -32,10 +32,9 @@ export class SeedService {
     };
     this.users.seed([demoUser]);
 
-    // Categories from frontend defaultCategories
-    const defaultCategories = [
+    // Menus and Submenus from frontend defaultCategories
+    const defaultMenus = [
       {
-        id: '1',
         name: 'BEAUTY',
         slug: 'beauty',
         subCategories: [
@@ -47,51 +46,49 @@ export class SeedService {
           'makeup',
           'nail',
         ],
-        parent_id: null,
-        created_at: new Date().toISOString(),
       },
       {
-        id: '2',
         name: 'TRENDS',
         slug: 'trends',
         subCategories: ['influencers', 'beauty trends', 'celebrities'],
-        parent_id: null,
-        created_at: new Date().toISOString(),
       },
       {
-        id: '3',
         name: 'CAREER',
         slug: 'career',
         subCategories: ['hiring talent', 'career tips'],
-        parent_id: null,
-        created_at: new Date().toISOString(),
       },
       {
-        id: '4',
         name: 'FEATURES',
         slug: 'features',
         subCategories: ['interview stories'],
-        parent_id: null,
-        created_at: new Date().toISOString(),
       },
       {
-        id: '5',
         name: 'PRODUCT',
         slug: 'product',
         subCategories: ['product', 'equipment'],
-        parent_id: null,
-        created_at: new Date().toISOString(),
       },
       {
-        id: '6',
         name: 'LOCATION',
         slug: 'location',
         subCategories: ['india', 'singapore'],
-        parent_id: null,
-        created_at: new Date().toISOString(),
       },
     ];
-    this.categories.seed(defaultCategories);
+
+    // Create menus and then create submenus for each
+    for (const menuData of defaultMenus) {
+      const { subCategories, ...menuFields } = menuData;
+      const createdMenu = await this.menuService.createMenu(menuFields);
+
+      // Create submenus for each subcategory
+      for (const subName of subCategories) {
+        const subSlug = subName.toLowerCase().replace(/\s+/g, '-');
+        await this.menuService.createSubmenu({
+          name: subName,
+          slug: subSlug,
+          parent_id: createdMenu._id as any,
+        });
+      }
+    }
 
     // Sample posts from frontend samplePosts (converted to backend post shape)
     const samplePosts = [
@@ -155,11 +152,16 @@ export class SeedService {
     };
     this.settings.seed(defaultSettings);
 
+    const allUsers = await this.users.findAll?.() ?? [];
+    const allPosts = await this.posts.findAll?.() ?? [];
+    // .findAll may return void, so default to empty array if undefined
+
     return {
-      users: this.users.findAll().length,
-      categories: this.categories.findAll().length,
-      posts: this.posts.findAll().length,
+      users: Array.isArray(allUsers) ? allUsers.length : 0,
+      menus: (await this.menuService.findAllMenus()).length,
+      posts: Array.isArray(allPosts) ? allPosts.length : 0,
       settings: this.settings.get(),
     };
+
   }
 }

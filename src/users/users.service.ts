@@ -5,6 +5,22 @@ import { User, UserDocument } from './user.schema';
 
 @Injectable()
 export class UsersService {
+  seed(
+    arg0: {
+      _id: any;
+      full_name: string;
+      email: string;
+      role: 'admin';
+      createdAt: string;
+      password: string;
+      avatar_url: string;
+    }[],
+  ) {
+    throw new Error('Method not implemented.');
+  }
+  findAll() {
+    throw new Error('Method not implemented.');
+  }
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async findByEmail(email: string): Promise<User | null> {
