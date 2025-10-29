@@ -1,80 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
-
-type User = {
-  _id: string;
-  full_name: string;
-  email: string;
-  role: 'admin' | 'editor' | 'author';
-  createdAt: string;
-  password?: string; // demo only
-  avatar_url?: string;
-};
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from './user.schema';
 
 @Injectable()
 export class UsersService {
-  private users = new Map<string, User>();
-
-  constructor() {
-    // Seed demo admin user
-    const adminId = uuid();
-    this.users.set(adminId, {
-      _id: adminId,
-      full_name: 'Admin User',
-      email: 'admin@gmail.com',
-      password: 'admin123', // plaintext for demo
-      role: 'admin',
-      createdAt: new Date().toISOString(),
-    });
-  }
-
-  findAll(): User[] {
-    return Array.from(this.users.values());
-  }
-
-  findOne(id: string): User {
-    const u = this.users.get(id);
-    if (!u) throw new NotFoundException('User not found');
-    return u;
-  }
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async findByEmail(email: string): Promise<User | null> {
-    const found = Array.from(this.users.values()).find(
-      (u) => u.email.toLowerCase() === email.toLowerCase(),
-    );
-    return found || null;
+    return this.userModel.findOne({ email });
   }
 
-  create(data: Partial<User>): User {
-    const id = uuid();
-    const now = new Date().toISOString();
-    const user: User = {
-      _id: id,
-      full_name: data.full_name || 'New User',
-      email: data.email || `user+${id}@example.com`,
-      role: (data.role as any) || 'author',
-      createdAt: now,
-      password: data.password || 'changeme', // demo, replace w/ hashed
-      avatar_url: data.avatar_url || '',
-    };
-    this.users.set(id, user);
-    return user;
+  async findById(id: string): Promise<User | null> {
+    return this.userModel.findById(id).select('-password');
   }
 
-  update(id: string, update: Partial<User>): User {
-    const user = this.findOne(id);
-    const updated = { ...user, ...update };
-    this.users.set(id, updated);
-    return updated;
+  async create(data: Partial<User>): Promise<User> {
+    const user = new this.userModel(data);
+    return user.save();
   }
 
-  remove(id: string) {
-    this.findOne(id);
-    this.users.delete(id);
-    return { deleted: true };
-  }
-
-  seed(users: User[]) {
-    users.forEach((u) => this.users.set(u._id, u));
+  async updatePassword(email: string, newPassword: string): Promise<void> {
+    await this.userModel.updateOne({ email }, { password: newPassword });
   }
 }

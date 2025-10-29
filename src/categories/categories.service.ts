@@ -1,38 +1,40 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-const { v4: uuid } = require('uuid');
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Category, CategoryDocument } from './categories.schema';
 
 @Injectable()
 export class CategoriesService {
-  private categories = new Map<string, any>();
+  constructor(
+    @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
+  ) {}
 
-  findAll() {
-    return Array.from(this.categories.values());
+  async findAll(): Promise<Category[]> {
+    return this.categoryModel.find().sort({ createdAt: -1 }).exec();
   }
 
-  async create(data: any) {
-    const { v4: uuid } = await import('uuid');
-    const id = uuid();
-    const cat = { id, ...data, created_at: new Date().toISOString() };
-    this.categories.set(id, cat);
-    return cat;
+  async findOne(id: string): Promise<Category> {
+    const category = await this.categoryModel.findById(id).exec();
+    if (!category) throw new NotFoundException('Category not found');
+    return category;
   }
 
-  update(id: string, update: any) {
-    const c = this.categories.get(id);
-    if (!c) throw new NotFoundException('Category not found');
-    const updated = { ...c, ...update };
-    this.categories.set(id, updated);
+  async create(data: Partial<Category>): Promise<Category> {
+    const cat = new this.categoryModel(data);
+    return cat.save();
+  }
+
+  async update(id: string, data: Partial<Category>): Promise<Category> {
+    const updated = await this.categoryModel
+      .findByIdAndUpdate(id, data, { new: true })
+      .exec();
+    if (!updated) throw new NotFoundException('Category not found');
     return updated;
   }
 
-  remove(id: string) {
-    if (!this.categories.has(id))
-      throw new NotFoundException('Category not found');
-    this.categories.delete(id);
+  async remove(id: string): Promise<{ deleted: boolean }> {
+    const deleted = await this.categoryModel.findByIdAndDelete(id).exec();
+    if (!deleted) throw new NotFoundException('Category not found');
     return { deleted: true };
-  }
-
-  seed(categories: any[]) {
-    categories.forEach((c) => this.categories.set(c.id, c));
   }
 }

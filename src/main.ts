@@ -8,6 +8,7 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL || '*',
   });
+  app.setGlobalPrefix('api');
   const port = Number(process.env.PORT) || 4000;
   await app.listen(port);
   // eslint-disable-next-line no-console
