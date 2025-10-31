@@ -1,34 +1,46 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Settings, SettingsDocument } from './settings.schema';
 
 @Injectable()
 export class SettingsService {
-  private settings: any = null;
+  constructor(
+    @InjectModel(Settings.name)
+    private settingsModel: Model<SettingsDocument>,
+  ) {}
 
-  get() {
-    return this.settings;
+  async get() {
+    const settings = await this.settingsModel.findOne().exec();
+    return settings;
   }
 
-  getById(id: string) {
-    if (!this.settings || this.settings._id !== id)
-      throw new NotFoundException('Settings not found');
-    return this.settings;
+  async getById(id: string) {
+    const settings = await this.settingsModel.findById(id).exec();
+    if (!settings) throw new NotFoundException('Settings not found');
+    return settings;
   }
 
-  create(data: any) {
-    const id = uuid();
-    this.settings = { _id: id, ...data };
-    return this.settings;
+  async create(data: any) {
+    const settings = new this.settingsModel(data);
+    return settings.save();
   }
 
-  update(id: string, data: any) {
-    if (!this.settings || this.settings._id !== id)
-      throw new NotFoundException('Settings not found');
-    this.settings = { ...this.settings, ...data };
-    return this.settings;
+  async update(id: string, data: any) {
+    const settings = await this.settingsModel
+      .findByIdAndUpdate(id, data, { new: true })
+      .exec();
+    if (!settings) throw new NotFoundException('Settings not found');
+    return settings;
   }
 
-  seed(settings: any) {
-    this.settings = settings;
+  async seed(settings: any) {
+    const existing = await this.settingsModel.findOne().exec();
+    if (existing) {
+      return this.settingsModel
+        .findByIdAndUpdate(existing._id, settings, { new: true })
+        .exec();
+    }
+    return this.create(settings);
   }
 }

@@ -1,24 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type SubmenuDocument = Submenu & Document;
-
 @Schema({ timestamps: true })
-export class Submenu {
+export class Submenu extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true, required: true, lowercase: true })
   slug: string;
 
   @Prop()
   description?: string;
 
-  // Reference to parent Menu
   @Prop({ type: Types.ObjectId, ref: 'Menu', required: true })
-  parent_id: Types.ObjectId;
+  parent_id: string;
 
-  // Status (active/inactive)
   @Prop({ default: true })
   status: boolean;
 }

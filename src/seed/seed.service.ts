@@ -4,11 +4,8 @@ import { PostsService } from '../posts/posts.service';
 import { MenuService } from '../menu/menu.service';
 import { SettingsService } from '../settings/settings.service';
 import { v4 as uuid } from 'uuid';
+import { UserRole } from '../users/user.schema'; // Make sure enum is imported
 
-/**
- * Seeds the in-memory stores with the sample data found in the frontend admin pages.
- * Run this programmatically after app bootstrap or expose an endpoint to trigger it.
- */
 @Injectable()
 export class SeedService {
   constructor(
@@ -19,20 +16,20 @@ export class SeedService {
   ) {}
 
   async run() {
-    // Users (demo)
+    // Users (demo admin)
     const demoAdminId = uuid();
     const demoUser = {
       _id: demoAdminId,
-      full_name: 'Admin Demo',
+      name: 'Admin Demo',
       email: 'admin@gmail.com',
-      role: 'admin' as 'admin',
+      role: UserRole.ADMIN,
       createdAt: new Date().toISOString(),
       password: 'admin123', // demo only
       avatar_url: '',
     };
-    this.users.seed([demoUser]);
+    await this.users.create(demoUser);
 
-    // Menus and Submenus from frontend defaultCategories
+    // Menus and Submenus
     const defaultMenus = [
       {
         name: 'BEAUTY',
@@ -74,12 +71,10 @@ export class SeedService {
       },
     ];
 
-    // Create menus and then create submenus for each
     for (const menuData of defaultMenus) {
       const { subCategories, ...menuFields } = menuData;
       const createdMenu = await this.menuService.createMenu(menuFields);
 
-      // Create submenus for each subcategory
       for (const subName of subCategories) {
         const subSlug = subName.toLowerCase().replace(/\s+/g, '-');
         await this.menuService.createSubmenu({
@@ -90,7 +85,7 @@ export class SeedService {
       }
     }
 
-    // Sample posts from frontend samplePosts (converted to backend post shape)
+    // Sample posts (use loop with await for each post)
     const samplePosts = [
       {
         _id: uuid(),
@@ -133,9 +128,13 @@ export class SeedService {
         views: 0,
       },
     ];
-    this.posts.seed(samplePosts);
 
-    // Settings default
+    // Seed posts individually
+    for (const post of samplePosts) {
+      await this.posts.create(post);
+    }
+
+    // Settings default (assuming .create exists)
     const defaultSettings = {
       _id: uuid(),
       site_name: 'daSalon',
@@ -150,18 +149,19 @@ export class SeedService {
       posts_per_page: 10,
       updated_at: new Date().toISOString(),
     };
-    this.settings.seed(defaultSettings);
 
-    const allUsers = await this.users.findAll?.() ?? [];
-    const allPosts = await this.posts.findAll?.() ?? [];
-    // .findAll may return void, so default to empty array if undefined
+    // Use create or update depending on your service API
+    await this.settings.create(defaultSettings);
+
+    // Gather statistics
+    const allUsers = (await this.users.findAll?.()) ?? [];
+    const allPosts = (await this.posts.findAll?.()) ?? [];
 
     return {
       users: Array.isArray(allUsers) ? allUsers.length : 0,
-      menus: (await this.menuService.findAllMenus()).length,
+      menus: (await this.menuService.getAllMenus()).length,
       posts: Array.isArray(allPosts) ? allPosts.length : 0,
-      settings: this.settings.get(),
+      settings: await this.settings.get(),
     };
-
   }
 }

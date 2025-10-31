@@ -1,23 +1,19 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type MenuDocument = Menu & Document;
-
 @Schema({ timestamps: true })
-export class Menu {
-  @Prop({ required: true })
+export class Menu extends Document {
+  @Prop({ required: true, trim: true })
   name: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ unique: true, required: true, lowercase: true })
   slug: string;
 
   @Prop()
   description?: string;
 
-  // Status (active/inactive)
   @Prop({ default: true })
   status: boolean;
-  _id: any;
 }
 
 export const MenuSchema = SchemaFactory.createForClass(Menu);
