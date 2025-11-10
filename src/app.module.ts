@@ -30,6 +30,7 @@ if (!mongoUri) {
     MongooseModule.forRoot(mongoUri),
 
     // App modules
+    DashboardModule,
     UsersModule,
     AuthModule,
     PostsModule,

@@ -9,33 +9,38 @@ import {
   Query,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
+import { CreatePostDto } from './dto/create-post.dto';
+import { UpdatePostDto } from './dto/update-post.dto';
 
 @Controller('blogs')
 export class PostsController {
   constructor(private readonly posts: PostsService) {}
 
   @Get()
-  findAll(@Query('category') category?: string) {
-    return this.posts.findAll(category);
+  async findAll(
+    @Query('menu') menu?: string,
+    @Query('submenu') submenu?: string,
+  ) {
+    return this.posts.findAll(menu, submenu);
   }
 
   @Post()
-  create(@Body() body: any) {
+  async create(@Body() body: CreatePostDto) {
     return this.posts.create(body);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string) {
     return this.posts.findOne(id);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param('id') id: string, @Body() body: UpdatePostDto) {
     return this.posts.update(id, body);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
     return this.posts.remove(id);
   }
 }

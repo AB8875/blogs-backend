@@ -1,62 +1,50 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Post } from './post.schema';
 
 @Injectable()
 export class PostsService {
-  private posts = new Map<string, any>();
-
-  findAll(category?: string) {
-    const all = Array.from(this.posts.values());
-    if (category) {
-      return all.filter(
-        (p) => p.category?.toLowerCase() === category.toLowerCase(),
-      );
-    }
-    return all;
+  constructor(@InjectModel(Post.name) private postModel: Model<Post>) {
+    console.log('>>> PostsService is injecting model with name:', Post.name);
   }
 
-  findOne(id: string) {
-    const p = this.posts.get(id);
-    if (!p) throw new NotFoundException('Post not found');
-    return p;
+  async findAll(menu?: string, submenu?: string) {
+    const filter: any = {};
+    if (menu) filter.menu = menu;
+    if (submenu) filter.submenu = submenu;
+    return this.postModel.find(filter).sort({ createdAt: -1 }).lean().exec();
   }
 
-  create(dto: any) {
-    const id = uuid();
-    const created = {
-      _id: id,
-      title: dto.title || 'Untitled',
-      slug: dto.slug || dto.title?.toLowerCase().replace(/\s+/g, '-') || id,
-      description: dto.description || '',
-      content: dto.content || '',
-      category: dto.category || '',
-      subCategory: dto.subCategory || '',
-      thumbnail: dto.thumbnail || '',
-      authors: dto.authors || [],
-      status: dto.status || 'draft',
-      tags: dto.tags || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+  async findOne(id: string) {
+    const post = await this.postModel.findById(id).lean().exec();
+    if (!post) throw new NotFoundException('Post not found');
+    return post;
+  }
+
+  async create(dto: any) {
+    const now = new Date().toISOString();
+    const post = new this.postModel({
       ...dto,
-    };
-    this.posts.set(id, created);
-    return created;
+      createdAt: now,
+      updatedAt: now,
+    });
+    return post.save();
   }
 
-  update(id: string, update: any) {
-    const p = this.findOne(id);
-    const updated = { ...p, ...update, updatedAt: new Date().toISOString() };
-    this.posts.set(id, updated);
-    return updated;
+  async update(id: string, update: any) {
+    return this.postModel
+      .findByIdAndUpdate(
+        id,
+        { ...update, updatedAt: new Date().toISOString() },
+        { new: true },
+      )
+      .exec();
   }
 
-  remove(id: string) {
-    this.findOne(id);
-    this.posts.delete(id);
+  async remove(id: string) {
+    await this.findOne(id);
+    await this.postModel.findByIdAndDelete(id).exec();
     return { deleted: true };
-  }
-
-  seed(posts: any[]) {
-    posts.forEach((p) => this.posts.set(p._id, p));
   }
 }

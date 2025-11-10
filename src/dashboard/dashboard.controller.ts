@@ -13,17 +13,21 @@ export class DashboardController {
 
   @Get('dashboard-stats')
   async stats() {
-    const totalPosts = this.posts.findAll().length;
-    // Find all menus (method should exist in MenuService!)
-    const totalMenus = (await this.menuService.getAllMenus()).length; // NOT findAllMenus()
+    const posts = await this.posts.findAll();
+    const totalPosts = posts.length;
 
-    // Find all users
-    const totalUsers = (await this.users.findAll()).length;
+    const menus = await this.menuService.getAllMenus();
+    const totalCategories = menus.length;
 
-    // Placeholder: sum of views could be a property on posts; using 0 here
-    const totalViews = this.posts
-      .findAll()
-      .reduce((acc, p) => acc + (p.views || 0), 0);
-    return { totalPosts, totalMenus, totalUsers, totalViews };
+    const users = await this.users.findAll();
+    const totalUsers = users.length;
+
+    // Only works if your Post schema has `views: number`
+    const totalViews = posts.reduce(
+      (acc, p) => acc + ((p as any).views || 0),
+      0,
+    );
+
+    return { totalPosts, totalCategories, totalUsers, totalViews };
   }
 }
