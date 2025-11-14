@@ -5,26 +5,32 @@ export type SettingsDocument = Settings & Document;
 
 @Schema({ timestamps: true })
 export class Settings {
-  @Prop({ required: true })
+  @Prop({ required: true, default: 'My Site' })
   siteName: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, default: 'Site description' })
   siteDescription: string;
 
-  @Prop()
+  @Prop({ default: '' })
   logo?: string;
 
-  @Prop()
+  @Prop({ default: '' })
   favicon?: string;
 
-  @Prop({ type: Object })
+  @Prop({
+    type: Object,
+    default: { email: '', phone: '', address: '' },
+  })
   contact?: {
     email?: string;
     phone?: string;
     address?: string;
   };
 
-  @Prop({ type: Object })
+  @Prop({
+    type: Object,
+    default: { facebook: '', twitter: '', instagram: '', linkedin: '' },
+  })
   social?: {
     facebook?: string;
     twitter?: string;
@@ -32,12 +38,35 @@ export class Settings {
     linkedin?: string;
   };
 
-  @Prop({ type: Object })
+  @Prop({
+    type: Object,
+    default: { metaTitle: '', metaDescription: '', keywords: [] },
+  })
   seo?: {
     metaTitle?: string;
     metaDescription?: string;
     keywords?: string[];
   };
+
+  @Prop({ default: 'light' })
+  theme: 'light' | 'dark' | 'system';
+
+  @Prop({ default: 10 })
+  postsPerPage: number;
+
+  // audit fields
+  @Prop({ default: null })
+  lastEditedBy?: string; // store user id or email
+
+  @Prop({
+    type: Array,
+    default: [],
+  })
+  history?: {
+    updatedAt?: Date;
+    updatedBy?: string;
+    diff?: Record<string, any>;
+  }[];
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

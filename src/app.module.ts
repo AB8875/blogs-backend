@@ -11,26 +11,16 @@ import { SettingsModule } from './settings/settings.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SeedModule } from './seed/seed.module';
 
-// Load .env variables globally
-ConfigModule.forRoot({ isGlobal: true });
-
-const mongoUri = process.env.MONGO_URI;
-
-if (!mongoUri) {
-  Logger.error(
-    '❌ Missing MONGO_URI in .env file. Please check your backend .env',
-    'AppModule',
-  );
-  throw new Error('MONGO_URI not defined in .env');
-}
-
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+
     // Connect to MongoDB
-    MongooseModule.forRoot(mongoUri),
+    MongooseModule.forRoot(process.env.MONGO_URI || '', {
+      // optional mongoose options
+    }),
 
     // App modules
-    DashboardModule,
     UsersModule,
     AuthModule,
     PostsModule,
@@ -42,4 +32,15 @@ if (!mongoUri) {
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule {
+  constructor() {
+    const mongoUri = process.env.MONGO_URI;
+    if (!mongoUri) {
+      Logger.error(
+        '❌ Missing MONGO_URI in .env file. Please check your backend .env',
+        'AppModule',
+      );
+      throw new Error('MONGO_URI not defined in .env');
+    }
+  }
+}

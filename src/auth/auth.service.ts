@@ -67,4 +67,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
+  // Get user by ID
+  async getUserById(id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user) throw new UnauthorizedException('User not found');
+    // remove sensitive fields if any (password)
+    const { password, ...safe } = user.toObject
+      ? user.toObject()
+      : (user as any);
+    return safe;
+  }
 }

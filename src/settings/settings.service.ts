@@ -5,6 +5,9 @@ import { Settings, SettingsDocument } from './settings.schema';
 
 @Injectable()
 export class SettingsService {
+  saveUpload(file: Express.Multer.File) {
+    throw new Error('Method not implemented.');
+  }
   constructor(
     @InjectModel(Settings.name)
     private settingsModel: Model<SettingsDocument>,
