@@ -21,9 +21,19 @@ export class MenuService {
 
   // ✅ Get all menus (public)
   async getAllMenus() {
-    return this.menuModel.find().lean().exec();
-  }
+    const menus = await this.menuModel.find().lean();
+    const submenus = await this.submenuModel.find().lean();
 
+    return menus.map((menu) => ({
+      ...menu,
+      submenus: submenus.filter(
+        (s) =>
+          s.parent_id &&
+          s.parent_id.toString() ===
+            (menu._id ? menu._id.toString() : menu.id?.toString()),
+      ),
+    }));
+  }
   // ✅ Get all menus with submenus (for admin panel)
   async getAllWithSubmenus() {
     const menus = await this.menuModel.find().lean();
